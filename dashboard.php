@@ -7,6 +7,7 @@
     }
 
     include 'db.php';
+    include 'daysleft.php';
 
     // Get user's email from session
     $user_email = $_SESSION['user_email'];
@@ -17,6 +18,26 @@
 
     if (mysqli_num_rows($result) <= 0) {
         header("Location: quiz.php");
+    }
+
+    // Check if user has subscribed or not
+    $sub = "SELECT * FROM sub_histroy WHERE email='$user_email' ORDER BY id DESC LIMIT 1";
+    $subresult = mysqli_query($conn, $sub);
+
+    if (mysqli_num_rows($subresult) > 0) {
+
+        $latestSubscription = mysqli_fetch_assoc($subresult);
+
+        $paymentDate = strtotime($latestSubscription['payment_date']);
+        $subscriptionDays = $latestSubscription['days'];
+        $plan = $latestSubscription['plan'];
+        $daysLeft = getDaysLeft($paymentDate, $subscriptionDays);
+
+    }
+    else{
+
+        $daysLeft = -1;
+        
     }
 
 ?>
@@ -38,6 +59,60 @@
             <a href="logout.php" class="primary-btn">Logout</a>
         </div>
     </nav>
+
+    <section id="dashboard">
+
+        <?php
+    
+            if($daysLeft <= 0){
+                echo "<div class='error'>User has no Active Plan</div>";
+            }
+            else {
+
+                // Get User Details
+                $user_query = "SELECT * FROM users WHERE email='$user_email' LIMIT 1";
+                $userresult = mysqli_query($conn, $user_query);
+
+                if (mysqli_num_rows($userresult) > 0) {
+
+                    $user = mysqli_fetch_assoc($userresult);
+                    $fullname = $user['fullname'];
+
+                }            
+
+        ?>
+
+        <div id="active">
+            
+            <div class="welcome">
+                <div class="lh">
+                    <h2>Welcome back <?php echo $fullname; ?></h2>
+                </div>
+                <div class="rh">
+                    <img src="./Assets/dashboard.png" alt="dashboard">
+                </div>
+            </div>
+
+            <div class="plan-status">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">Days Left</h4>
+                        <p class="card-text"><?php echo $daysLeft; ?> Days Left</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">Plan Details</h4>
+                        <p class="card-text"><?php echo $plan; ?></p>
+                    </div>
+                </div>
+            </div>            
+
+        </div>
+
+        <?php } ?>
+
+    </section>
     
     <section id="plans">
         <h2 class="title">PLANS & PRICING</h2>
